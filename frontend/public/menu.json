@@ -1,0 +1,179 @@
+{
+  "menuItems": [
+    {
+      "id": 1,
+      "name": "Chicken Kottu",
+      "category": "Rice & Kottu",
+      "price": 650,
+      "outlet": "Main Canteen",
+      "available": true
+    },
+    {
+      "id": 2,
+      "name": "Vegetable Rice & Curry",
+      "category": "Rice & Kottu",
+      "price": 400,
+      "outlet": "Main Canteen",
+      "available": true
+    },
+    {
+      "id": 3,
+      "name": "Fish Bun",
+      "category": "Short Eats",
+      "price": 120,
+      "outlet": "Juice Bar",
+      "available": true
+    },
+    {
+      "id": 4,
+      "name": "Egg Hopper (3 pcs)",
+      "category": "Hoppers",
+      "price": 300,
+      "outlet": "Night Kade",
+      "available": true
+    },
+    {
+      "id": 5,
+      "name": "Cheese Kottu",
+      "category": "Rice & Kottu",
+      "price": 800,
+      "outlet": "Main Canteen",
+      "available": true
+    },
+    {
+      "id": 6,
+      "name": "Vegetable Roti",
+      "category": "Short Eats",
+      "price": 100,
+      "outlet": "Juice Bar",
+      "available": true
+    },
+    {
+      "id": 7,
+      "name": "Chicken Fried Rice",
+      "category": "Rice & Kottu",
+      "price": 700,
+      "outlet": "Main Canteen",
+      "available": true
+    },
+    {
+      "id": 8,
+      "name": "Plain Hopper (5 pcs)",
+      "category": "Hoppers",
+      "price": 250,
+      "outlet": "Night Kade",
+      "available": true
+    },
+    {
+      "id": 9,
+      "name": "Wood Apple Juice",
+      "category": "Drinks",
+      "price": 200,
+      "outlet": "Juice Bar",
+      "available": true
+    },
+    {
+      "id": 10,
+      "name": "Iced Milo",
+      "category": "Drinks",
+      "price": 180,
+      "outlet": "Juice Bar",
+      "available": true
+    },
+    {
+      "id": 11,
+      "name": "String Hoppers (10 pcs)",
+      "category": "Hoppers",
+      "price": 350,
+      "outlet": "Night Kade",
+      "available": false
+    },
+    {
+      "id": 12,
+      "name": "Devilled Chicken",
+      "category": "Rice & Kottu",
+      "price": 900,
+      "outlet": "Main Canteen",
+      "available": true
+    },
+    {
+      "id": 13,
+      "name": "Faluda",
+      "category": "Drinks",
+      "price": 350,
+      "outlet": "Juice Bar",
+      "available": true
+    },
+    {
+      "id": 14,
+      "name": "Isso Wade",
+      "category": "Short Eats",
+      "price": 150,
+      "outlet": "Night Kade",
+      "available": true
+    },
+    {
+      "id": 15,
+      "name": "Seeni Sambol Bun",
+      "category": "Short Eats",
+      "price": 110,
+      "outlet": "Juice Bar",
+      "available": true
+    },
+    {
+      "id": 16,
+      "name": "Nasi Goreng",
+      "category": "Rice & Kottu",
+      "price": 750,
+      "outlet": "Main Canteen",
+      "available": true
+    }
+  ],
+  "orders": [
+    {
+      "id": 101,
+      "studentId": "IT22045678",
+      "studentName": "Kasun Perera",
+      "items": "Chicken Kottu x1, Iced Milo x1",
+      "total": 830,
+      "status": "Pending",
+      "placedAt": "2026-07-17T11:20:00"
+    },
+    {
+      "id": 102,
+      "studentId": "IT22098765",
+      "studentName": "Nethmi Silva",
+      "items": "Rice & Curry x2",
+      "total": 800,
+      "status": "Preparing",
+      "placedAt": "2026-07-17T11:35:00"
+    },
+    {
+      "id": 103,
+      "studentId": "IT22011223",
+      "studentName": "Tharindu Jayasinghe",
+      "items": "Egg Hopper x3, Faluda x1",
+      "total": 1250,
+      "status": "Ready",
+      "placedAt": "2026-07-17T11:40:00"
+    },
+    {
+      "id": 104,
+      "studentId": "IT22045678",
+      "studentName": "Kasun Perera",
+      "items": "Cheese Kottu x1",
+      "total": 800,
+      "status": "Delivered",
+      "placedAt": "2026-07-16T13:05:00"
+    },
+    {
+      "id": 105,
+      "studentId": "IT22076543",
+      "studentName": "Dilki Fernando",
+      "items": "Fish Bun x2, Wood Apple Juice x1",
+      "total": 440,
+      "status": "Pending",
+      "placedAt": "2026-07-17T11:50:00"
+    }
+  ]
+}
