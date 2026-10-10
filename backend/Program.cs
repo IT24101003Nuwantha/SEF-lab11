@@ -91,6 +91,7 @@ builder.Services.AddDbContext<AppDbContext>(opt => opt.UseNpgsql(connectionStrin
 // Add services to the container.
 builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
 
 // Configure CORS
 var frontendUrl = builder.Configuration["Frontend:Url"]
@@ -203,6 +204,8 @@ app.UseCors("Frontend");
 app.UseAuthentication(); // AuthN before AuthZ
 app.UseAuthorization();  // AuthZ
 
+app.MapHealthChecks("/health");
+app.MapGet("/healthz", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
 app.MapControllers();
 
 app.Run();

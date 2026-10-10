@@ -154,4 +154,5 @@ The backend loads variables directly from `backend/.env` (or root `.env`), as we
 | **Authentication** | — | `POST` | `/api/auth/register` | Available on Backend | Backend supports user registration with BCrypt hashing. Frontend UI from Lab 02 does not have auth pages. |
 | **Authentication** | — | `POST` | `/api/auth/login` | Available on Backend | Backend issues signed JWT tokens. Frontend UI from Lab 02 does not have login pages. |
 | **Menu Management** | — | `POST`, `PUT`, `DELETE` | `/api/menu` | Available on Backend | Protected by `[Authorize(Roles = "Admin")]`. |
+| **Health Check** | — | `GET` | `/health`, `/healthz` | **Available on Backend** | Built-in lightweight health check endpoint returning HTTP 200 OK. |
 | **Orders** | `OrderPage.jsx` | — | — | Client-side only | Lab 02 includes a client-side order form; Lab 04 backend did not define an Order entity or controller. |
