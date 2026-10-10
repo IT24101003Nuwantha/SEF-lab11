@@ -16,7 +16,20 @@ DotEnv.Load(options: new DotEnvOptions(
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Helper to format PostgreSQL / Supabase connection strings (handles both URI and ADO.NET key-value formats)
+// Railway Port Configuration (Task 2)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+// Forwarded Headers for Railway Reverse Proxy (Task 6)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// Helper to format PostgreSQL / Supabase connection strings (handles both URI and ADO.NET formats)
 static string FormatConnectionString(string? rawConnStr)
 {
     if (string.IsNullOrWhiteSpace(rawConnStr)) return rawConnStr ?? "";
@@ -28,23 +41,31 @@ static string FormatConnectionString(string? rawConnStr)
         try
         {
             var uri = new Uri(rawConnStr);
-            var userInfo = uri.UserInfo.Split(':');
-            var username = Uri.UnescapeDataString(userInfo[0]);
-            var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+            var userInfo = uri.UserInfo;
+            var colonIdx = userInfo.IndexOf(':');
+            var username = colonIdx >= 0 ? Uri.UnescapeDataString(userInfo.Substring(0, colonIdx)) : Uri.UnescapeDataString(userInfo);
+            var password = colonIdx >= 0 ? Uri.UnescapeDataString(userInfo.Substring(colonIdx + 1)) : "";
             var host = uri.Host;
-            var port = uri.Port > 0 ? uri.Port : 5432;
+            var portNum = uri.Port > 0 ? uri.Port : 5432;
             var database = uri.AbsolutePath.TrimStart('/');
             if (string.IsNullOrEmpty(database)) database = "postgres";
 
             var npgsqlBuilder = new Npgsql.NpgsqlConnectionStringBuilder
             {
                 Host = host,
-                Port = port,
+                Port = portNum,
                 Database = database,
                 Username = username,
                 Password = password,
                 SslMode = Npgsql.SslMode.Require
             };
+
+            // If connecting through Supabase PgBouncer pooler (port 6543), disable client-side pooling issues
+            if (portNum == 6543)
+            {
+                npgsqlBuilder.Pooling = false;
+            }
+
             return npgsqlBuilder.ConnectionString;
         }
         catch
@@ -76,11 +97,11 @@ static string FormatConnectionString(string? rawConnStr)
     return rawConnStr;
 }
 
-// Add DbContext (supports DATABASE_URL, SUPABASE_DB_URL, ConnectionStrings__Default, or appsettings.json)
+// Add DbContext (supports ConnectionStrings__Default, DATABASE_URL, SUPABASE_DB_URL, or appsettings.json)
 var rawConnectionString = 
-    Environment.GetEnvironmentVariable("DATABASE_URL")
+    Environment.GetEnvironmentVariable("ConnectionStrings__Default")
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? Environment.GetEnvironmentVariable("SUPABASE_DB_URL")
-    ?? Environment.GetEnvironmentVariable("ConnectionStrings__Default")
     ?? builder.Configuration.GetConnectionString("Default")
     ?? builder.Configuration["ConnectionStrings:Default"]
     ?? builder.Configuration["ConnectionStrings__Default"];
@@ -142,10 +163,11 @@ builder.Services
     });
 builder.Services.AddAuthorization();
 
-// Swagger Bearer Token Setup
+// Swagger Bearer Token Setup (Task 5)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "CampusEats API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -169,13 +191,20 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Ensure DB is migrated and seeded
+// Forwarded headers for Railway / reverse-proxy
+app.UseForwardedHeaders();
+
+// Ensure DB is migrated and seeded on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
+        logger.LogInformation("Verifying and applying database migrations...");
         db.Database.Migrate();
+        logger.LogInformation("Database migrations applied successfully.");
+
         if (!db.MenuItems.Any())
         {
             db.MenuItems.AddRange(
@@ -183,29 +212,57 @@ using (var scope = app.Services.CreateScope())
                 new MenuItem { Name = "Fried Rice", Price = 850m, Category = "Mains" },
                 new MenuItem { Name = "Watalappan", Price = 350m, Category = "Dessert" });
             db.SaveChanges();
+            logger.LogInformation("Initial menu items seeded.");
         }
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+        logger.LogError(ex, "An error occurred while connecting to or migrating the database.");
     }
 }
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Enable Swagger in Development and on Railway for lab testing (Task 5)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CampusEats API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseCors("Frontend");
 
 app.UseAuthentication(); // AuthN before AuthZ
 app.UseAuthorization();  // AuthZ
 
-app.MapHealthChecks("/health");
-app.MapGet("/healthz", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
+// Simple Health & Info Endpoints (Task 4)
+app.MapGet("/", () => Results.Ok(new { message = "CampusEats API is running" }));
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+app.MapGet("/healthz", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
+// Database Diagnostic Health Check Endpoint
+app.MapGet("/health/db", async (AppDbContext db) =>
+{
+    try
+    {
+        var canConnect = await db.Database.CanConnectAsync();
+        var itemCount = canConnect ? await db.MenuItems.CountAsync() : 0;
+        return Results.Ok(new
+        {
+            status = canConnect ? "connected" : "failed",
+            provider = "PostgreSQL",
+            menuItemCount = itemCount
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(
+            title: "Database connection failed",
+            detail: ex.Message,
+            statusCode: 500
+        );
+    }
+});
+
 app.MapControllers();
 
 app.Run();
